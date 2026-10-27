@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GRE Vocab 3000</title>
+<meta name="description" content="3,000 GRE words, ten a day, with listening, pronunciation practice, quizzes and spaced review. Progress stays in your browser.">
+<meta name="theme-color" content="#0b6b56">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preload" href="fonts/Lora.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/style.css">
+<script>
+  /* apply the saved theme before first paint so there is no flash */
+  try {
+    var s = JSON.parse(localStorage.getItem('grevocab.v1') || '{}').settings || {};
+    if (s.theme === 'dark' || s.theme === 'light') document.documentElement.setAttribute('data-theme', s.theme);
+    if (s.size) document.documentElement.style.setProperty('--scale', s.size);
+  } catch (e) {}
+</script>
+</head>
+<body>
+<a class="skip" href="#app">Skip to content</a>
+<header class="top">
+  <a class="brand" href="#/today" aria-label="GRE Vocab 3000, home"><span class="mark" aria-hidden="true"></span><span>GRE Vocab <b>3000</b></span></a>
+  <nav id="tabs" aria-label="Main">
+    <a href="#/today" data-tab="today"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><rect x="4" y="5" width="16" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 10h16M9 3v4M15 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Today</span></a>
+    <a href="#/days" data-tab="days"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><span>Days</span></a>
+    <a href="#/listen" data-tab="listen"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M4 14v-2a8 8 0 0116 0v2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="3" y="13" width="4" height="7" rx="2"/><rect x="17" y="13" width="4" height="7" rx="2"/></svg><span>Listen</span></a>
+    <a href="#/quiz" data-tab="quiz"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><rect x="5" y="3" width="14" height="18" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 9h6M9 13h6M9 17h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Quiz</span></a>
+    <a href="#/progress" data-tab="progress"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M5 20V10M12 20V4M19 20v-7" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg><span>Progress</span></a>
+  </nav>
+  <div class="tools">
+    <a class="iconbtn" href="#/words" aria-label="Find a word"><svg class="ic" viewBox="0 0 24 24" width="20" height="20"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M16 16l5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></a>
+    <a class="iconbtn" href="#/settings" aria-label="Settings"><svg class="ic" viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+  </div>
+</header>
+<main id="app" tabindex="-1"><p class="loading">Loading the words…</p></main>
+<div id="toast" role="status" aria-live="polite"></div>
+<noscript><p style="padding:2rem">This site needs JavaScript.</p></noscript>
+<script src="js/util.js"></script>
+<script src="js/store.js"></script>
+<script src="js/data.js"></script>
+<script src="js/speech.js"></script>
+<script src="js/quiz.js"></script>
+<script src="js/app.js"></script>
+<script src="js/views1.js"></script>
+<script src="js/views2.js"></script>
+<script src="js/views3.js"></script>
+<script src="js/views4.js"></script>
+</body>
+</html>

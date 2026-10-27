@@ -1,0 +1,15 @@
+{
+  "name": "GRE Vocab 3000",
+  "short_name": "GRE Vocab",
+  "description": "3,000 GRE words, ten a day, with listening, pronunciation practice and quizzes.",
+  "start_url": "./#/today",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#edf1ef",
+  "theme_color": "#0b6b56",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
