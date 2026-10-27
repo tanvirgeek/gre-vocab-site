@@ -87,12 +87,13 @@
     }
 
     const win = G.quizWindow(t, S.settings.quizDay);
-    const wn = G.quiz.weekWords(win).length;
-    const wk = G.store.bestQuiz('week', win.id);
+    const ws = G.quiz.weekStatus(win), wn = ws.words, np = ws.parts.length;
     const wkName = G.WEEKDAYS[S.settings.quizDay];
-    rows.push(h('a.task' + (wn && !wk ? '.hot' : ''), { href: '#/quiz/week/' + win.id },
-      h('span.task-main', h('strong', wn ? (wk ? `${wkName} quiz done: ${Math.round(wk.best * 100)}%` : `${wkName} quiz is open`) : `${wkName} quiz has no words yet`),
-        h('span', wn ? `${wn} words from ${G.fmtDate(win.start)} to ${G.fmtDate(win.end)}. Open until ${G.fmtDate(win.closes)}.` : `Days you finish between ${G.fmtDate(win.start)} and ${G.fmtDate(win.end)} are counted. Next quiz: ${G.fmtDate(G.addDays(win.quizDay, 7))}.`)),
+    const nextPart = Math.min(ws.taken + 1, np);
+    const wkTitle = !wn ? `${wkName} quiz has no words yet` : ws.pct != null ? `${wkName} quiz done: ${ws.pct}%` : np > 1 ? `${wkName} quiz is open: ${ws.taken} of ${np} parts done` : `${wkName} quiz is open`;
+    rows.push(h('a.task' + (wn && ws.pct == null ? '.hot' : ''), { href: '#/quiz/week/' + win.id + (np > 1 ? '?part=' + nextPart : '') },
+      h('span.task-main', h('strong', wkTitle),
+        h('span', wn ? `${wn} words from ${G.fmtDate(win.start)} to ${G.fmtDate(win.end)}${np > 1 ? `, in ${np} parts` : ''}. Open until ${G.fmtDate(win.closes)}.` : `Days you finish between ${G.fmtDate(win.start)} and ${G.fmtDate(win.end)} are counted. Next quiz: ${G.fmtDate(G.addDays(win.quizDay, 7))}.`)),
       G.icon('fwd', 18)));
 
     const done = Object.keys(S.completed).length, st = G.store.streak();
@@ -142,7 +143,7 @@
       h('a.btn', { href: '#/play/day/' + n }, G.icon('listen', 18), 'Listen to all ten'),
       h('a.btn', { href: '#/flash/' + n }, 'Flashcards'),
       h('a.btn', { href: '#/quiz/listen/' + n }, 'Listening quiz'));
-    const cards = h('div.cards', fulls.map((f, i) => G.wordCard(f, { open: false })));
+    const cards = h('div.cards', fulls.map((f, i) => G.wordCard(f, { open: true })));
     const doneBox = h('div.donebox');
     function paintDone() {
       doneBox.replaceChildren();
@@ -156,7 +157,7 @@
         doneBox.append(h('button.btn.primary.wide', { type: 'button', onclick: () => {
           G.store.markDone(n); paintDone(); G.toast(`Day ${n} done. These words will come back for review tomorrow.`, 3600);
         } }, `I finished day ${n}`),
-        h('p.muted.small', 'Tap a word to open it. Listen first, then say it out loud, then write your own sentence.'));
+        h('p.muted.small', 'Tap a word’s name to fold or unfold it. Listen first, then say it out loud, then write your own sentence.'));
       }
     }
     paintDone();

@@ -288,3 +288,8 @@ input.spell { width: 100%; font: 600 1.5rem var(--serif); padding: .7rem 1rem; m
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 @media print { .top, #tabs, #toast { display: none; } }
+
+.fc.back { text-align: left; justify-items: stretch; } .fc.back .fc-word, .fc.back .syl, .fc.back .fc-pos { justify-self: center; } .fc.back .row.center { justify-content: center; }
+.fc-syn b { color: var(--ink); font-weight: 500; }
+
+.qr-side.wrap { flex-wrap: wrap; justify-content: flex-end; } .qold { display: inline-block; font-size: .78rem; color: var(--gold-ink); background: var(--gold); padding: .1rem .6rem; border-radius: 999px; margin: 0 0 .5rem; }

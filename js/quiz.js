@@ -132,12 +132,39 @@
   function weekWords(win) {
     const ws = [];
     G.days.forEach(d => { const c = G.S.completed[d.n]; if (c && c >= win.start && c <= win.end) d.words.forEach(w => ws.push(w)); });
-    let list = notKnown(ws);
-    if (list.length > 70) list = G.shuffle(list).sort((a, b) => ((G.S.words[b] || {}).m || 0) - ((G.S.words[a] || {}).m || 0)).slice(0, 70);
-    return list;
+    return notKnown(ws);
+  }
+  /* Plan for one week's quiz.
+     - more than 50 words: split into equal parts of at most 50 (stable per week)
+     - fewer than 20 words: topped up to 20 with older words (missed first, then due, then any learned) */
+  const PART_MAX = 50, PART_MIN = 20;
+  function weekPlan(win) {
+    const real = weekWords(win);
+    if (!real.length) return { real, parts: [], old: new Set() };
+    let list = real.slice(); const old = new Set();
+    if (list.length < PART_MIN) {
+      const have = new Set(list), t = G.today();
+      const pool = G.store.learnedWords().filter(w => !have.has(w) && !(G.S.words[w] || {}).k);
+      const rank = (w) => { const x = G.S.words[w] || {}; return x.m > 0 ? 0 : (x.due && x.due <= t) ? 1 : 2; };
+      const rnd = G.mulberry(+win.id.replace(/-/g, '') % 2147483647);
+      G.shuffle(pool, rnd).sort((a, b) => rank(a) - rank(b)).slice(0, PART_MIN - list.length).forEach(w => { list.push(w); old.add(w); });
+    }
+    const n = Math.ceil(list.length / PART_MAX), size = Math.ceil(list.length / n);
+    const sh = G.shuffle(list.slice().sort(), G.mulberry(+win.id.replace(/-/g, '') % 2147483647));
+    return { real, old, parts: Array.from({ length: n }, (_, i) => sh.slice(i * size, (i + 1) * size)) };
+  }
+  const weekRef = (win, part, total) => total > 1 ? `${win.id}#${part}` : win.id;
+  /* combined result over all parts: pct stays null until every part has been taken */
+  function weekStatus(win) {
+    const plan = weekPlan(win), parts = plan.parts;
+    const recs = parts.map((_, i) => G.store.bestQuiz('week', weekRef(win, i + 1, parts.length)));
+    const taken = recs.filter(Boolean).length;
+    let pct = null;
+    if (parts.length && taken === parts.length) pct = Math.round(100 * recs.reduce((a, r, i) => a + r.best * parts[i].length, 0) / parts.reduce((a, p) => a + p.length, 0));
+    return { parts, old: plan.old, taken, pct, words: plan.real.length };
   }
   const missedWords = () => Object.keys(G.S.words).filter(w => G.S.words[w].m > 0 && !G.S.words[w].k)
     .sort((a, b) => G.S.words[b].m - G.S.words[a].m).slice(0, 20);
 
-  G.quiz = { build, isCorrect, PART, weekWords, missedWords, notKnown };
+  G.quiz = { build, isCorrect, PART, weekWords, weekPlan, weekRef, weekStatus, missedWords, notKnown };
 })();

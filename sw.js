@@ -1,5 +1,5 @@
 /* Offline support. Cache name carries a version: bump it when you change any file. */
-const VERSION = 'v1';
+const VERSION = 'v3';
 const CACHE = 'gre-vocab-' + VERSION;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',

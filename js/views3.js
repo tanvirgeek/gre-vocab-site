@@ -32,8 +32,10 @@
       stage.replaceChildren(h('div.fc.back',
         h('div.fc-word', f.w), G.syl(f.p), h('p.fc-pos', f.t),
         h('p.fc-mean', f.m),
-        h('p.fc-ex', G.speech.btn(ex, { mini: true, label: 'Hear sentence' }), ' ', G.hl(ex, f.w)),
-        h('p.fc-syn', 'Also: ', f.s.slice(0, 4).join(', ')),
+        h('ul.ex.fc-exs', f.x.map(x => h('li', h('span.ex-btns', G.speech.btn(x, { mini: true, label: 'Hear sentence' }), G.speech.btn(x, { mini: true, slow: true, label: 'Hear sentence slowly' })), h('span.ex-text', G.hl(x, f.w))))),
+        h('p.fc-syn', h('b', 'Synonyms: '), f.s.join(', ')),
+        h('p.fc-syn', h('b', 'Opposites: '), f.a.join(', ')),
+        h('p.fc-syn', h('b', 'Goes with: '), f.c.join(' · ')),
         h('div.row.wrap.center',
           h('button.btn.bad', { type: 'button', onclick: () => grade(false) }, 'Missed it'),
           h('button.btn.primary', { type: 'button', onclick: () => grade(true) }, 'Got it'))));

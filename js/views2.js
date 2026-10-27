@@ -11,13 +11,19 @@
     /* weekly windows, newest first */
     const weekRows = [];
     for (let b = 0; b < 6; b++) {
-      const win = G.quizWindow(t, S.settings.quizDay, b);
-      const n = G.quiz.weekWords(win).length, best = G.store.bestQuiz('week', win.id);
-      if (b > 0 && !n) continue;
+      const win = G.quizWindow(t, S.settings.quizDay, b), ws = G.quiz.weekStatus(win), np = ws.parts.length;
+      if (b > 0 && !np) continue;
+      const side = [];
+      if (ws.pct != null) side.push(h('span.score', ws.pct + '%'));
+      for (let i = 1; i <= np; i++) {
+        const done = !!G.store.bestQuiz('week', G.quiz.weekRef(win, i, np));
+        side.push(h('a.btn.small' + (!done && b === 0 && i === ws.taken + 1 ? '.primary' : ''), { href: '#/quiz/week/' + win.id + (np > 1 ? '?part=' + i : '') },
+          np > 1 ? (done ? `Part ${i} again` : `Part ${i}`) : (done ? 'Retake' : 'Take it')));
+      }
+      const extra = ws.parts.reduce((a, p) => a + p.length, 0) - ws.words;
       weekRows.push(h('li' + (b === 0 ? '.now' : ''),
-        h('div.qr-main', h('b', `Quiz of ${G.fmtDate(win.quizDay)}`), h('span', n ? `${n} words · studied ${G.fmtDate(win.start)} to ${G.fmtDate(win.end)}` : `No days finished ${G.fmtDate(win.start)} to ${G.fmtDate(win.end)}`)),
-        h('div.qr-side', best ? h('span.score', Math.round(best.best * 100) + '%') : null,
-          n ? h('a.btn.small' + (b === 0 && !best ? '.primary' : ''), { href: '#/quiz/week/' + win.id }, best ? 'Retake' : 'Take it') : null)));
+        h('div.qr-main', h('b', `Quiz of ${G.fmtDate(win.quizDay)}`), h('span', np ? `${ws.words} words · studied ${G.fmtDate(win.start)} to ${G.fmtDate(win.end)}${np > 1 ? ` · ${np} parts` : ''}${extra ? ` · plus ${extra} older words` : ''}` : `No days finished ${G.fmtDate(win.start)} to ${G.fmtDate(win.end)}`)),
+        h('div.qr-side.wrap', side)));
     }
     /* units */
     const ready = [], grid = h('div.unitgrid');
@@ -69,6 +75,7 @@
     async function begin() {
       root.replaceChildren(h('p.muted', 'Preparing your questions…'));
       const qs = await G.quiz.build(cfg.words, cfg.qkind);
+      if (cfg.old) qs.forEach(q => { if (cfg.old.has(q.words[0])) q.old = true; });
       run(root, cfg, qs, mode);
     }
     intro();
@@ -83,11 +90,15 @@
       desc: `Days ${d1.n} and ${d2.n}: ${words.length} words, in the same three parts as the book tests.` + (done ? '' : ` You have not finished both days yet, but you can still try.`),
       next: u < 150 ? { href: '#/day/' + (d2.n + 1), label: `Continue with day ${d2.n + 1}` } : null });
   });
-  G.on('/quiz/week/:id', ({ id }) => {
-    const win = G.quizWindow(id, G.S.settings.quizDay);
-    const words = G.quiz.weekWords(win);
-    return start({ kind: 'week', ref: win.id, title: `${G.WEEKDAYS[G.S.settings.quizDay]} quiz, ${G.fmtDate(win.quizDay)}`, words, qkind: 'standard',
-      desc: `${words.length} words from the days you finished between ${G.fmtDate(win.start)} and ${G.fmtDate(win.end)}. One question for each word, mixed across the three parts.`,
+  G.on('/quiz/week/:id', ({ id }, query) => {
+    const win = G.quizWindow(id, G.S.settings.quizDay), ws = G.quiz.weekStatus(win), np = ws.parts.length;
+    const part = Math.max(1, Math.min(np || 1, +query.get('part') || 1));
+    const words = np ? ws.parts[part - 1] : [];
+    const old = ws.old, extra = words.filter(w => old.has(w)).length;
+    const name = `${G.WEEKDAYS[G.S.settings.quizDay]} quiz, ${G.fmtDate(win.quizDay)}`;
+    return start({ kind: 'week', ref: G.quiz.weekRef(win, part, np), title: np > 1 ? `${name}, part ${part} of ${np}` : name, words, qkind: 'standard', old,
+      next: np > 1 && part < np ? { href: '#/quiz/week/' + id + '?part=' + (part + 1), label: `Continue with part ${part + 1}` } : null,
+      desc: `${words.length - extra} words from the days you finished between ${G.fmtDate(win.start)} and ${G.fmtDate(win.end)}` + (extra ? `, plus ${extra} older words to fill the quiz` : '') + '. One question for each word, mixed across the three parts.' + (np > 1 ? ` This week is split into ${np} parts so no sitting is too long.` : ''),
       empty: `No days were finished between ${G.fmtDate(win.start)} and ${G.fmtDate(win.end)}.` });
   });
   G.on('/quiz/listen/:n', ({ n }) => {
@@ -153,6 +164,7 @@
       body.replaceChildren();
       const lock = locked[i];
       body.append(h('p.qinstr', G.quiz.PART[q.type][1]));
+      if (q.old) body.append(h('p.qold', 'From an earlier week'));
       if (q.type === 'tc' || q.type === 'se') body.append(sentenceNode(q));
       if (q.type === 'match') body.append(h('div.qmatch', h('span.qword', q.prompt), G.syl(q.pron), G.speech.btn(q.prompt, { mini: true, label: 'Hear the word' })));
       if (q.speak) body.append(h('div.qlisten', G.speech.btn(q.speak, { big: true, label: 'Play the audio', text: 'Play' }), G.speech.btn(q.speak, { slow: true, label: 'Play slowly', text: 'Slow' })));
