@@ -21,7 +21,7 @@
     }
   });
 
-  let mem = null, memoryOnly = false, timer = null;
+  let mem = null, memoryOnly = false, timer = null, dirty = false;
 
   function read() {
     try {
@@ -42,14 +42,57 @@
     try { localStorage.setItem(KEY + '.probe', '1'); localStorage.removeItem(KEY + '.probe'); } catch (e) { memoryOnly = true; }
     G.S = mem;
     G.storageOk = !memoryOnly;
+    mem.baseUpdated = mem.updated || 0;
     addEventListener('pagehide', flush);
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
+    addEventListener('storage', (e) => { if (e.key === KEY) syncFromStorage(); });
+    addEventListener('focus', syncFromStorage);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); else syncFromStorage(); });
+  }
+  /* Two windows (for example the installed app and a browser tab) share one saved copy.
+     Rules so neither can wipe the other's progress:
+     1. only write when this window actually changed something (dirty);
+     2. before writing, fold in anything another window saved in the meantime;
+     3. when another window saves, load its changes here (unless we have unsaved changes). */
+  function mergeStates(stored, mine) {
+    const out = Object.assign({}, stored, mine);
+    out.completed = Object.assign({}, stored.completed, mine.completed);
+    out.words = Object.assign({}, stored.words);
+    for (const w in mine.words) {
+      const a = stored.words && stored.words[w], b = mine.words[w];
+      out.words[w] = a ? Object.assign({}, a, b, { m: Math.max(a.m || 0, b.m || 0), k: (a.k || b.k) ? 1 : 0 }) : b;
+    }
+    const seen = new Set(), q = [];
+    [...(stored.quizzes || []), ...(mine.quizzes || [])].forEach(x => { const k = [x.kind, x.ref, x.date, x.score, x.total, x.title].join('|'); if (!seen.has(k)) { seen.add(k); q.push(x); } });
+    out.quizzes = q.sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : 0));
+    out.sentences = Object.assign({}, stored.sentences, mine.sentences);
+    out.pron = Object.assign({}, stored.pron, mine.pron);
+    out.activity = Object.assign({}, stored.activity);
+    for (const d in mine.activity) out.activity[d] = Math.max(out.activity[d] || 0, mine.activity[d]);
+    out.lastBackup = [stored.lastBackup, mine.lastBackup].filter(Boolean).sort().pop() || null;
+    return out;
   }
   function flush() {
     clearTimeout(timer); timer = null;
-    try { localStorage.setItem(KEY, JSON.stringify(mem)); G.storageOk = true; } catch (e) { G.storageOk = false; }
+    if (!dirty) return;
+    try {
+      const stored = read();
+      if (stored && stored.updated && stored.updated !== mem.baseUpdated) { mem = merge(defaults(), mergeStates(stored, mem)); G.S = mem; }
+      mem.updated = Date.now(); mem.baseUpdated = mem.updated;
+      localStorage.setItem(KEY, JSON.stringify(mem)); G.storageOk = true; dirty = false;
+    } catch (e) { G.storageOk = false; }
   }
-  function save() { clearTimeout(timer); timer = setTimeout(flush, 250); }
+  function save() { dirty = true; clearTimeout(timer); timer = setTimeout(flush, 250); }
+
+  /* pick up what another window saved */
+  function syncFromStorage() {
+    if (dirty) return;
+    const stored = read();
+    if (!stored || !stored.updated || stored.updated === mem.baseUpdated) return;
+    mem = merge(defaults(), stored); mem.baseUpdated = stored.updated; G.S = mem;
+    mem.cur = nextIncomplete();
+    if (G.applyAppearance) G.applyAppearance();
+    if (/^#?\/?(today|days|progress|quiz)?$/.test(location.hash) && G.render) G.render();   // never interrupt a running quiz or card session
+  }
 
   /* ---- helpers on the state ---- */
   const W = (w) => mem.words[w] || (mem.words[w] = { b: 0, due: null, m: 0, s: null });
@@ -107,15 +150,15 @@
 
   /* ---- backup ---- */
   function exportJSON() {
-    mem.lastBackup = G.today(); flush();
+    mem.lastBackup = G.today(); dirty = true; flush();
     return JSON.stringify({ app: 'gre-vocab-3000', exported: new Date().toISOString(), data: mem }, null, 1);
   }
   function importJSON(text) {
     const o = JSON.parse(text);
     if (!o || o.app !== 'gre-vocab-3000' || !o.data || typeof o.data !== 'object') throw new Error('This is not a backup from this app.');
-    mem = merge(defaults(), o.data); G.S = mem; flush();
+    mem = merge(defaults(), o.data); G.S = mem; dirty = true; mem.baseUpdated = (read() || {}).updated; flush();
   }
-  function reset() { mem = defaults(); G.S = mem; flush(); }
+  function reset() { mem = defaults(); G.S = mem; dirty = true; mem.baseUpdated = (read() || {}).updated; flush(); }
 
   G.store = { init, save, flush, W, touch, markDone, undoDone, grade, dueWords, learnedWords, streak, addQuiz, bestQuiz, exportJSON, importJSON, reset, nextIncomplete, INTERVALS };
 })();
